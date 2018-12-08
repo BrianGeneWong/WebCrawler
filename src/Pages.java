@@ -1,5 +1,7 @@
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Pages {
 
@@ -15,5 +17,13 @@ public class Pages {
 
     public List<Page> getPages() {
         return pages;
+    }
+
+    public Set<String> getValidAddress(){
+        Set<String> s= new HashSet<>();
+        for(Page p:pages){
+            s.add(p.getAddress());
+        }
+        return s;
     }
 }
