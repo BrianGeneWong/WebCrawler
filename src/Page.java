@@ -1,16 +1,21 @@
+import com.google.gson.annotations.SerializedName;
+
 import java.util.*;
 
 public class Page {
 
+
+    //@SerializedName("address")
     private  String address;
-    private Set<String> links;
+    //@SerializedName("links")
+    private ArrayList<String> links;
 
     public Page(){
         address=null;
-        links=new HashSet<>();
+        links= new ArrayList<>();
     }
 
-    public Page(String address,Set<String> links){
+    public Page(String address,ArrayList<String> links){
         this.address=address;
         this.links=links;
     }
@@ -19,8 +24,15 @@ public class Page {
         return address;
     }
 
-    public Set<String> getLinks() {
+    public ArrayList<String> getLinks() {
         return links;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+    public void setLinks(ArrayList<String> links) {
+        this.links = links;
     }
 
 }
