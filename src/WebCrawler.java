@@ -14,7 +14,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class WebCrawler {
 
-   // static Set<String> valid= new HashSet<>();
+    static Set<String> valid= new HashSet<>();
     static Set<String> success= new HashSet<>();
     static Set<String> skipped= new HashSet<>();
     static Set<String> invalid= new HashSet<>();
@@ -45,31 +45,27 @@ public class WebCrawler {
      */
     public static void crawl(Queue<Page> queue) {
         for (Page p : queue) {
-            success.add(p.getAddress());
+            valid.add(p.getAddress());
         }
 
             for (Page p : queue) {
                 for (String link : p.getLinks()) {
-                /*
-                if(!valid.contains(link))
-                    invalid.add(link);
-                else{
-                    if(success.add(link)==false){
-                        skipped.add(link);
-                    }
-                }
-                */
-                    if (!success.contains(link))
+
+                    if (!valid.contains(link))
                         invalid.add(link);
-                    else
-                        skipped.add(link);
+                    else {
+                        if (success.add(link) == false) {
+                            skipped.add(link);
+                        }
+                    }
                 }
             }
 
 
     }
 
-    public static void printOutput(){
+    public static void printOutput(String test){
+        System.out.println(test+" Output");
         System.out.println("Success:[");
         for(String s : success){
             System.out.println(s);
@@ -91,10 +87,12 @@ public class WebCrawler {
     }
 
     public static void main(String[] args){
-        Pages pages= getPageFromFile("test1.json");
+        String test1="test1.json";
+        String test2="test2.json";
+        Pages pages= getPageFromFile(test1);
         Queue<Page> q= new LinkedList<>(pages.getPages());
         crawl(q);
-        printOutput();
+        printOutput(test1);
 
 
     }
