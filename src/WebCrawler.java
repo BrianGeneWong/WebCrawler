@@ -8,11 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-
+import java.util.concurrent.*;
 
 
 public class WebCrawler {
@@ -23,8 +19,9 @@ public class WebCrawler {
     Set<String> skipped;
     Set<String> invalid;
 
+    Page firstPage;
     BlockingQueue<Page> queue;
-
+    Map<String,List<String>> map;
 
 
     public WebCrawler(){
@@ -49,31 +46,41 @@ public class WebCrawler {
             System.out.println("File Not Found");
         }
         queue= new LinkedBlockingQueue<>(pages.getPages());
+        valid= Collections.synchronizedSet(pages.getValidAddress());
+        firstPage= queue.remove();
+        map= new ConcurrentHashMap<>();
+        map.put(firstPage.getAddress(),firstPage.getLinks());
+        while(!queue.isEmpty()){
+            Page p= queue.remove();
+            map.put(p.getAddress(),p.getLinks());
+        }
 
     }
 
 
+
     public void crawl() {
-        for (Page p : queue) {
-            valid.add(p.getAddress());
-        }
+        //start at first page
         //Use some amount of threads to process the queue more quickly.
+        BlockingQueue<String> q= new LinkedBlockingQueue<>();
+        q.add(firstPage.getAddress());
         ExecutorService exector= Executors.newFixedThreadPool(3);
-        while(!queue.isEmpty()){
+        while(!q.isEmpty()){
             exector.submit(new Runnable() {
                 @Override
                 public void run() {
-                    Page p = queue.remove();
-                    for (String link : p.getLinks()) {
-
-                        if (!valid.contains(link))
-                            invalid.add(link);
-                        else {
-                            if (success.add(link) == false) {
-                                skipped.add(link);
-                            }
-                        }
+                    String p = q.remove();
+                   // System.out.println(p);
+                    if(valid.contains(p)) {
+                        if(success.add(p))
+                            q.addAll(map.get(p));
+                        else
+                            skipped.add(p);
                     }
+                    else{
+                        invalid.add(p);
+                    }
+
                 }
             });
 
@@ -116,9 +123,15 @@ public class WebCrawler {
         ArrayList<String> list= new ArrayList<>();
         list.add(test1);
         list.add(test2);
-        // Pages pages= getPageFromFile(test1);
 
-       // Queue<Page> q  = new LinkedList<>(pages.getPages());
+        /*
+        // Pages pages= getPageFromFile(test1);
+        WebCrawler crawler=new WebCrawler();
+        crawler.getPageFromFile(test1);
+        crawler.crawl();
+        crawler.printOutput();
+        */
+
 
         ExecutorService exec= Executors.newFixedThreadPool(2);
 
@@ -132,6 +145,7 @@ public class WebCrawler {
             });
         }
         exec.shutdown();
+
 
 
 
