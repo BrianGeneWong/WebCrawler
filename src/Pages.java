@@ -19,11 +19,6 @@ public class Pages {
         return pages;
     }
 
-    public Set<String> getValidAddress(){
-        Set<String> s= new HashSet<>();
-        for(Page p:pages){
-            s.add(p.getAddress());
-        }
-        return s;
-    }
+
+
 }
