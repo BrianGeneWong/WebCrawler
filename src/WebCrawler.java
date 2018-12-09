@@ -9,20 +9,34 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+
 
 
 public class WebCrawler {
 
-    static Set<String> valid= new HashSet<>();
-    static Set<String> success= new HashSet<>();
-    static Set<String> skipped= new HashSet<>();
-    static Set<String> invalid= new HashSet<>();
 
-    BlockingQueue<String> queue= new LinkedBlockingQueue<>();
+    Set<String> valid ;
+    Set<String> success;
+    Set<String> skipped;
+    Set<String> invalid;
+
+    BlockingQueue<Page> queue;
 
 
-    public static Pages getPageFromFile(String filename){
+
+    public WebCrawler(){
+        valid = Collections.synchronizedSet(new HashSet<>());
+        success= Collections.synchronizedSet(new HashSet<>());
+        skipped= Collections.synchronizedSet(new HashSet<>());
+        invalid= Collections.synchronizedSet(new HashSet<>());
+        queue=new LinkedBlockingQueue<>();
+    }
+
+
+    public void getPageFromFile(String filename){
         Gson gson= new Gson();
         Pages pages= new Pages();
         BufferedReader br;
@@ -34,38 +48,44 @@ public class WebCrawler {
         }catch (FileNotFoundException e){
             System.out.println("File Not Found");
         }
-        return pages;
+        queue= new LinkedBlockingQueue<>(pages.getPages());
 
     }
 
-    /** Takes in work queue
-     * Adds skipped
-     *
-     * @param queue , the work queue
-     */
-    public static void crawl(Queue<Page> queue) {
+
+    public void crawl() {
         for (Page p : queue) {
             valid.add(p.getAddress());
         }
+        //Use some amount of threads to process the queue more quickly.
+        ExecutorService exector= Executors.newFixedThreadPool(3);
+        while(!queue.isEmpty()){
+            exector.submit(new Runnable() {
+                @Override
+                public void run() {
+                    Page p = queue.remove();
+                    for (String link : p.getLinks()) {
 
-            for (Page p : queue) {
-                for (String link : p.getLinks()) {
-
-                    if (!valid.contains(link))
-                        invalid.add(link);
-                    else {
-                        if (success.add(link) == false) {
-                            skipped.add(link);
+                        if (!valid.contains(link))
+                            invalid.add(link);
+                        else {
+                            if (success.add(link) == false) {
+                                skipped.add(link);
+                            }
                         }
                     }
                 }
-            }
+            });
+
+        }
+        exector.shutdown();
+
 
 
     }
 
-    public static void printOutput(String test){
-        System.out.println(test+" Output");
+    public void printOutput(){
+        //System.out.println(test+" Output");
         System.out.println("Success:[");
         for(String s : success){
             System.out.println(s);
@@ -86,15 +106,38 @@ public class WebCrawler {
 
     }
 
+
+
+
     public static void main(String[] args){
         String test1="test1.json";
         String test2="test2.json";
-        Pages pages= getPageFromFile(test1);
-        Queue<Page> q= new LinkedList<>(pages.getPages());
-        crawl(q);
-        printOutput(test1);
+
+        ArrayList<String> list= new ArrayList<>();
+        list.add(test1);
+        list.add(test2);
+        // Pages pages= getPageFromFile(test1);
+
+       // Queue<Page> q  = new LinkedList<>(pages.getPages());
+
+        ExecutorService exec= Executors.newFixedThreadPool(2);
+
+        for(String s:list){
+            exec.submit(() -> {
+                WebCrawler crawler=new WebCrawler();
+                crawler.getPageFromFile(s);
+                crawler.crawl();
+                crawler.printOutput();
+
+            });
+        }
+        exec.shutdown();
+
+
 
 
     }
+
+
 
 }
